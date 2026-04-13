@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduPlatform — Modern Learning</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body {
+      background: var(--navy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .splash {
+      text-align: center;
+      animation: pageFade 0.5s ease;
+    }
+    .splash-logo {
+      width: 64px; height: 64px;
+      background: var(--amber);
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 20px;
+      animation: spin 2s linear infinite;
+    }
+    .splash h1 {
+      font-family: var(--font-head);
+      color: var(--white);
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    .splash p { color: rgba(255,255,255,0.4); font-size: 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="splash">
+    <div class="splash-logo">🎓</div>
+    <h1>EduPlatform</h1>
+    <p>Redirecting you…</p>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script>
+    /* Smart redirect: send to dashboard if logged in, else to login */
+    const token = getToken();
+    const user  = getUser();
+
+    setTimeout(() => {
+      if (token && user) {
+        window.location.href = 'dashboard.html';
+      } else {
+        window.location.href = 'login.html';
+      }
+    }, 600);
+  </script>
+</body>
+</html>

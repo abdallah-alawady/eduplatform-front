@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — EduPlatform</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ===== AUTH ROOT GRID ===== -->
+<div class="auth-root">
+
+  <!-- Left: Brand Panel -->
+  <div class="auth-brand">
+    <div class="auth-brand__logo">
+      <div class="auth-brand__logo-mark">🎓</div>
+      <span class="auth-brand__logo-name">EduPlatform</span>
+    </div>
+
+    <h1 class="auth-brand__headline">
+      Learn Smarter,<br>Grow <span>Faster.</span>
+    </h1>
+    <p class="auth-brand__sub">
+      A modern education platform built for teachers who create and students who thrive. World-class courses, live exams, and real progress tracking.
+    </p>
+
+    <div class="auth-brand__stats">
+      <div>
+        <div class="auth-brand__stat-num">12K+</div>
+        <div class="auth-brand__stat-lbl">Students enrolled</div>
+      </div>
+      <div>
+        <div class="auth-brand__stat-num">340</div>
+        <div class="auth-brand__stat-lbl">Active courses</div>
+      </div>
+      <div>
+        <div class="auth-brand__stat-num">98%</div>
+        <div class="auth-brand__stat-lbl">Satisfaction rate</div>
+      </div>
+    </div>
+
+    <!-- Decorative circles -->
+    <div class="auth-brand__deco"></div>
+    <div class="auth-brand__deco2"></div>
+  </div>
+
+  <!-- Right: Form Panel -->
+  <div class="auth-form-panel">
+    <div class="auth-form-box">
+      <h2>Welcome back</h2>
+      <p class="auth-sub">Don't have an account? <a href="register.html">Sign up free</a></p>
+
+      <!-- Global error alert -->
+      <div class="alert alert-error" id="login-alert" role="alert">
+        <span>⚠️</span>
+        <span class="alert-msg"></span>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" novalidate>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input
+            type="email"
+            id="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+          />
+          <div class="field-error" id="email-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            placeholder="Your password"
+            autocomplete="current-password"
+          />
+          <div class="field-error" id="password-error"></div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-600);cursor:pointer">
+            <input type="checkbox" id="remember-me" style="accent-color:var(--amber);width:14px;height:14px" />
+            Remember me
+          </label>
+          <a href="#" style="font-size:13px;color:var(--amber-dark);font-weight:500">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn-primary" id="login-btn">
+          Sign In
+        </button>
+
+      </form>
+
+      <!-- Demo accounts hint -->
+      <div style="margin-top:28px;padding:16px;background:var(--gray-50);border-radius:var(--radius-sm);border:1px solid var(--gray-200)">
+        <p style="font-size:12px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Demo accounts</p>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="demo-fill" data-email="teacher@demo.com" data-pass="demo123" data-role="teacher"
+            style="text-align:left;padding:8px 12px;border-radius:6px;border:1px solid var(--gray-200);background:var(--white);font-size:13px;color:var(--gray-600);cursor:pointer;transition:background 0.2s">
+            🧑‍🏫 <strong>Teacher</strong> — teacher@demo.com
+          </button>
+          <button class="demo-fill" data-email="student@demo.com" data-pass="demo123" data-role="student"
+            style="text-align:left;padding:8px 12px;border-radius:6px;border:1px solid var(--gray-200);background:var(--white);font-size:13px;color:var(--gray-600);cursor:pointer;transition:background 0.2s">
+            🎒 <strong>Student</strong> — student@demo.com
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- end auth-root -->
+
+<script src="js/main.js"></script>
+<script>
+  /* ---- Redirect if already logged in ---- */
+  redirectIfLoggedIn();
+
+  const form     = document.getElementById('login-form');
+  const emailIn  = document.getElementById('email');
+  const passIn   = document.getElementById('password');
+  const loginBtn = document.getElementById('login-btn');
+
+  /* ---- Real-time validation ---- */
+  emailIn.addEventListener('blur', () => {
+    setFieldError(emailIn, validateField(emailIn, 'required') || validateField(emailIn, 'email'));
+  });
+  passIn.addEventListener('blur', () => {
+    setFieldError(passIn, validateField(passIn, 'required'));
+  });
+
+  /* ---- Demo fill buttons ---- */
+  document.querySelectorAll('.demo-fill').forEach(btn => {
+    btn.addEventListener('mouseenter', () => btn.style.background = 'var(--gray-100)');
+    btn.addEventListener('mouseleave', () => btn.style.background = 'var(--white)');
+    btn.addEventListener('click', () => {
+      emailIn.value = btn.dataset.email;
+      passIn.value  = btn.dataset.pass;
+      // Prefill role hint so demo works without real API
+      btn._role = btn.dataset.role;
+    });
+  });
+
+  /* ---- Form submit ---- */
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideAlert('login-alert');
+
+    // Client-side validation
+    const emailErr = validateField(emailIn, 'required') || validateField(emailIn, 'email');
+    const passErr  = validateField(passIn,  'required');
+    setFieldError(emailIn, emailErr);
+    setFieldError(passIn, passErr);
+    if (emailErr || passErr) return;
+
+    // Loading state
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<span class="spinner"></span>Signing in…';
+
+    try {
+      // POST /api/auth/login
+      const data = await api.post('/auth/login', {
+        email:    emailIn.value.trim(),
+        password: passIn.value,
+      });
+
+      // Expect: { token, user: { id, name, email, role } }
+      saveSession(data.user, data.token);
+      showToast(`Welcome back, ${data.user.name}! 👋`, 'success');
+      setTimeout(() => redirectToDashboard(), 800);
+
+    } catch (err) {
+      /* ---- DEMO fallback (no real API) ---- */
+      const demoUsers = {
+        'teacher@demo.com': { id: 1, name: 'Ms. Sarah Ahmed', email: 'teacher@demo.com', role: 'teacher' },
+        'student@demo.com': { id: 2, name: 'Ali Hassan',      email: 'student@demo.com', role: 'student' },
+      };
+      const demo = demoUsers[emailIn.value.trim()];
+      if (demo && passIn.value === 'demo123') {
+        saveSession(demo, 'demo-token-' + demo.role);
+        showToast(`Welcome back, ${demo.name}! 👋`, 'success');
+        setTimeout(() => redirectToDashboard(), 800);
+      } else {
+        showAlert('login-alert', err.message || 'Invalid email or password. Please try again.');
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign In';
+      }
+    }
+  });
+</script>
+</body>
+</html>

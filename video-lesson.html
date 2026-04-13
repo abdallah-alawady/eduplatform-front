@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson — EduPlatform</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99"></div>
+
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__logo">
+      <div class="sidebar__logo-mark">🎓</div>
+      <span class="sidebar__logo-name">EduPlatform</span>
+    </div>
+    <div class="sidebar__user">
+      <div class="sidebar__avatar" id="sidebar-avatar">U</div>
+      <div>
+        <div class="sidebar__user-name" id="sidebar-user-name">Loading…</div>
+        <div class="sidebar__user-role" id="sidebar-user-role">—</div>
+      </div>
+    </div>
+    <nav class="sidebar__nav" id="sidebar-nav"></nav>
+    <div class="sidebar__bottom">
+      <button class="sidebar__logout" id="logout-btn">
+        <span class="nav-icon">🚪</span> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar__left">
+        <button class="menu-toggle" id="menu-toggle">☰</button>
+        <div>
+          <div class="topbar__title" id="lesson-title-bar">Video Lesson</div>
+          <div class="topbar__breadcrumb">
+            <a href="dashboard.html">Home</a> ›
+            <a href="courses.html">Courses</a> ›
+            <a href="#" id="course-link-crumb">Course</a> ›
+            <span id="lesson-crumb">Lesson</span>
+          </div>
+        </div>
+      </div>
+      <div class="topbar__right">
+        <div class="topbar-notif">🔔<span class="badge"></span></div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy)" id="topbar-user-name"></div>
+      </div>
+    </header>
+
+    <main class="page-body" id="lesson-content">
+      <div style="display:flex;align-items:center;justify-content:center;min-height:50vh">
+        <div style="width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#f59e0b;border-radius:50%;animation:spin 0.7s linear infinite"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+<script>
+  requireAuth();
+  populateSidebarUser();
+
+  const user      = getUser();
+  const isTeacher = user?.role === 'teacher';
+  const courseId  = getParam('courseId') || '1';
+  const lessonId  = parseInt(getParam('lessonId') || '1');
+
+  /* ---- Sidebar nav ---- */
+  document.getElementById('sidebar-nav').innerHTML =
+    '<div class="sidebar__nav-section">Main Menu</div>' +
+    [
+      { icon:'🏠', label:'Dashboard', page:'dashboard.html' },
+      { icon:'📚', label:'Courses',   page:'courses.html' },
+      { icon:'📝', label:'Exams',     page:'exams.html' },
+      { icon:'⚙️', label:'Settings', page:'#' },
+    ].map(item => `
+      <a href="${item.page}" class="nav-item" data-page="${item.page}">
+        <span class="nav-icon">${item.icon}</span><span>${item.label}</span>
+      </a>`).join('');
+
+  /* ---- Demo data ---- */
+  const DEMO_LESSONS = [
+    { id:1, title:'Introduction to Python',     type:'video',   duration:'12 min', completed:true  },
+    { id:2, title:'Variables & Data Types',      type:'video',   duration:'18 min', completed:true  },
+    { id:3, title:'Operators & Expressions',     type:'video',   duration:'14 min', completed:true  },
+    { id:4, title:'Control Flow: if/else',       type:'video',   duration:'20 min', completed:false },
+    { id:5, title:'Loops: for & while',          type:'video',   duration:'22 min', completed:false },
+    { id:6, title:'Quiz: Basics Check',          type:'quiz',    duration:'10 min', completed:false },
+    { id:7, title:'Functions & Scope',           type:'video',   duration:'25 min', completed:false },
+    { id:8, title:'Lists, Tuples & Dicts',       type:'video',   duration:'28 min', completed:false },
+    { id:9, title:'File I/O',                    type:'article', duration:'15 min', completed:false },
+    { id:10,title:'Object-Oriented Programming', type:'video',   duration:'35 min', completed:false },
+    { id:11,title:'Modules & Packages',          type:'article', duration:'12 min', completed:false },
+    { id:12,title:'Final Project',               type:'quiz',    duration:'45 min', completed:false },
+  ];
+
+  const DEMO_LESSON_CONTENT = {
+    4: {
+      title: 'Control Flow: if/else',
+      type: 'video',
+      duration: '20 min',
+      videoUrl: null, // null = show placeholder
+      description: 'In this lesson, we explore how Python makes decisions using conditional statements. You\'ll learn if, elif, and else syntax, comparison operators, logical operators, and nested conditions with hands-on examples.',
+      notes: 'Key concepts: Boolean expressions, comparison operators (==, !=, <, >, <=, >=), logical operators (and, or, not), nested if statements.',
+    }
+  };
+
+  let allLessons   = [];
+  let currentLesson = null;
+
+  async function loadLesson() {
+    let lessons, lesson;
+    try {
+      [lessons, lesson] = await Promise.all([
+        api.get(`/courses/${courseId}/lessons`),
+        api.get(`/courses/${courseId}/lessons/${lessonId}`),
+      ]);
+    } catch {
+      lessons = DEMO_LESSONS;
+      lesson  = { ...DEMO_LESSONS.find(l => l.id === lessonId), ...(DEMO_LESSON_CONTENT[lessonId] || {}) };
+      if (!lesson.title) lesson = DEMO_LESSONS[0];
+    }
+
+    allLessons    = lessons;
+    currentLesson = lesson;
+
+    /* Update breadcrumbs */
+    document.getElementById('lesson-title-bar').textContent = lesson.title;
+    document.getElementById('lesson-crumb').textContent     = lesson.title;
+    document.getElementById('course-link-crumb').href       = `course-details.html?id=${courseId}`;
+    document.title = `${lesson.title} — EduPlatform`;
+
+    /* Current index */
+    const idx  = allLessons.findIndex(l => l.id === lessonId);
+    const prev = allLessons[idx - 1];
+    const next = allLessons[idx + 1];
+
+    /* ---- Render ---- */
+    const content = document.getElementById('lesson-content');
+    content.innerHTML = `
+      <div class="video-layout">
+
+        <!-- Left: player + info -->
+        <div>
+          <!-- Video Player -->
+          <div class="video-player-wrap" id="video-player-wrap">
+            ${lesson.videoUrl
+              ? `<video controls src="${lesson.videoUrl}" style="width:100%;height:100%"></video>`
+              : `<div class="video-placeholder">
+                   <div class="play-btn" id="play-btn">▶</div>
+                   <div style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.7)">${lesson.title}</div>
+                   <div style="font-size:13px;margin-top:6px">⏱ ${lesson.duration || '—'}</div>
+                 </div>`}
+          </div>
+
+          <!-- Video Info -->
+          <div class="video-info">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span class="badge badge-amber">${lesson.type || 'video'}</span>
+              <span style="font-size:13px;color:var(--gray-400)">⏱ ${lesson.duration || '—'}</span>
+              <span style="font-size:13px;color:var(--gray-400)">Lesson ${idx + 1} of ${allLessons.length}</span>
+            </div>
+            <h2>${lesson.title}</h2>
+            <p>${lesson.description || 'No description available for this lesson.'}</p>
+
+            <!-- Lesson notes -->
+            ${lesson.notes ? `
+              <div style="margin-top:20px;padding:16px 20px;background:var(--amber-glow);border:1px solid rgba(245,158,11,0.2);border-radius:var(--radius-sm)">
+                <div style="font-size:12px;font-weight:700;color:var(--amber-dark);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">📌 Key Notes</div>
+                <p style="font-size:13.5px;color:var(--gray-800);line-height:1.7">${lesson.notes}</p>
+              </div>` : ''}
+          </div>
+
+          <!-- Navigation buttons -->
+          <div class="video-controls">
+            ${prev
+              ? `<button class="btn-secondary" onclick="window.location.href='video-lesson.html?courseId=${courseId}&lessonId=${prev.id}'">
+                   ← Previous
+                 </button>`
+              : ''}
+            <button class="btn-amber" id="mark-done-btn" style="margin-left:auto">
+              ✓ Mark as Complete
+            </button>
+            ${next
+              ? `<button class="btn-primary" id="next-btn"
+                   onclick="window.location.href='video-lesson.html?courseId=${courseId}&lessonId=${next.id}'">
+                   Next Lesson →
+                 </button>`
+              : `<button class="btn-primary" onclick="window.location.href='course-details.html?id=${courseId}'">
+                   Finish Course 🎉
+                 </button>`}
+          </div>
+        </div>
+
+        <!-- Right: lessons sidebar -->
+        <div class="lessons-sidebar">
+          <div class="lessons-sidebar-header">
+            Course Lessons
+            <span style="font-size:13px;font-weight:400;color:var(--gray-400)">${allLessons.filter(l=>l.completed).length}/${allLessons.length}</span>
+          </div>
+          <div class="lessons-sidebar-list">
+            ${allLessons.map((l, i) => `
+              <div class="sidebar-lesson ${l.id === lessonId ? 'active' : ''} ${l.completed ? 'completed' : ''}"
+                   onclick="window.location.href='video-lesson.html?courseId=${courseId}&lessonId=${l.id}'">
+                <div class="sidebar-lesson-num">
+                  ${l.completed ? '✓' : i + 1}
+                </div>
+                <div>
+                  <div class="sidebar-lesson-title">${l.title}</div>
+                  <div class="sidebar-lesson-dur">⏱ ${l.duration} · ${l.type}</div>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>
+
+      </div>`;
+
+    /* ---- "Mark as complete" ---- */
+    document.getElementById('mark-done-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('mark-done-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Saving…';
+      try { await api.post(`/courses/${courseId}/lessons/${lessonId}/complete`, {}); }
+      catch { /* demo */ }
+      btn.style.background = 'var(--green)';
+      btn.style.color      = '#fff';
+      btn.innerHTML        = '✓ Completed!';
+      showToast('Lesson marked as complete! 🎉', 'success');
+    });
+
+    /* ---- Play button animation ---- */
+    document.getElementById('play-btn')?.addEventListener('click', () => {
+      const wrap = document.getElementById('video-player-wrap');
+      wrap.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,0.6);gap:16px">
+          <div style="font-size:32px">▶️</div>
+          <div style="font-size:14px">Video would play from your API video URL</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.3)">Connect your video streaming endpoint</div>
+        </div>`;
+      showToast('Video player ready — connect your stream URL', 'info');
+    });
+  }
+
+  loadLesson();
+</script>
+</body>
+</html>
